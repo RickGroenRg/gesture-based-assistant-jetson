@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jarvis-gesture"
+version = "0.1.0"
+description = "Jarvis-style gesture assistant MVP for Jetson"
+requires-python = ">=3.10"
+dependencies = [
+  "opencv-python>=4.9.0",
+  "mediapipe>=0.10.14",
+  "numpy>=1.26.0",
+  "pyttsx3>=2.98",
+  "SpeechRecognition>=3.10.4",
+  "pyaudio>=0.2.14",
+  "python-dotenv>=1.0.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
