@@ -35,6 +35,16 @@ class AppConfig:
     piper_binary: str = "piper"
     piper_model_path: str = ""
 
+    microphone_enabled: bool = False
+    microphone_device_index: int = -1
+    stt_timeout_seconds: float = 2.0
+    stt_phrase_time_limit_seconds: float = 4.0
+    stt_calibration_seconds: float = 0.5
+
+    log_level: str = "INFO"
+    metrics_log_interval_seconds: float = 2.0
+    display_mode: str = "auto"
+
     @staticmethod
     def from_env() -> "AppConfig":
         load_dotenv()
@@ -58,4 +68,12 @@ class AppConfig:
             tts_backend=os.getenv("TTS_BACKEND", "piper"),
             piper_binary=os.getenv("PIPER_BINARY", "piper"),
             piper_model_path=os.getenv("PIPER_MODEL_PATH", ""),
+            microphone_enabled=_to_bool(os.getenv("MICROPHONE_ENABLED", "false")),
+            microphone_device_index=int(os.getenv("MICROPHONE_DEVICE_INDEX", "-1")),
+            stt_timeout_seconds=float(os.getenv("STT_TIMEOUT_SECONDS", "2.0")),
+            stt_phrase_time_limit_seconds=float(os.getenv("STT_PHRASE_TIME_LIMIT_SECONDS", "4.0")),
+            stt_calibration_seconds=float(os.getenv("STT_CALIBRATION_SECONDS", "0.5")),
+            log_level=os.getenv("LOG_LEVEL", "INFO"),
+            metrics_log_interval_seconds=float(os.getenv("METRICS_LOG_INTERVAL", "2.0")),
+            display_mode=os.getenv("DISPLAY_MODE", "auto"),
         )

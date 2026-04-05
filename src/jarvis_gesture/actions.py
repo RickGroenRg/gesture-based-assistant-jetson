@@ -22,6 +22,8 @@ class ActionRouter:
         self._handlers: Dict[str, Callable[[np.ndarray], ActionResult]] = {
             "open_palm": self._handle_play_pause,
             "fist": self._handle_snapshot,
+            "voice_play_pause": self._handle_play_pause,
+            "voice_snapshot": self._handle_snapshot,
             "voice_volume_up": self._handle_volume_up,
             "voice_volume_down": self._handle_volume_down,
         }

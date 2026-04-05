@@ -23,13 +23,14 @@ Included now:
   - open_palm -> play/pause placeholder action
   - fist -> snapshot action
 - Action router and cooldown handling
-- Optional voice output pipeline hooks
+- Offline TTS with backend fallback
+- Microphone-gated STT for command and discussion options
 
 Planned in next milestones:
 
-- Voice command input mapping (volume up/down and more)
 - MediaPipe Tasks gesture backend integration with fallback
 - Jetson-optimized camera pipeline (GStreamer)
+- Replace placeholder action handlers with real system integrations
 - Demo scripts and reliability instrumentation
 
 ## Hardware
@@ -83,6 +84,23 @@ sudo systemctl restart nvargus-daemon
 
 4. Re-run the gst-launch command and continue only when it succeeds.
 
+### 2.1 Microphone Verification (Required for STT)
+
+If you want discussion/voice commands, confirm a microphone is available:
+
+```bash
+arecord -l
+```
+
+Optional quick capture test:
+
+```bash
+arecord -D plughw:0,0 -f S16_LE -r 16000 -c 1 -d 3 /tmp/mic_test.wav
+aplay /tmp/mic_test.wav
+```
+
+If your card/device index differs, update `MICROPHONE_DEVICE_INDEX` in `.env`.
+
 ### 3. Python Environment Setup
 
 1. Create and activate a virtual environment:
@@ -127,6 +145,8 @@ PIPER_BINARY=piper
 PIPER_MODEL_PATH=models/piper/en_US-lessac-medium.onnx
 CAMERA_BACKEND=gstreamer
 GST_PROFILE=balanced
+MICROPHONE_ENABLED=true
+MICROPHONE_DEVICE_INDEX=-1
 ```
 
 If a model is missing or fails to load, the app is designed to fall back to safer defaults where possible.
@@ -164,6 +184,9 @@ In the app window:
 - Show an open palm to trigger play/pause placeholder action
 - Make a fist to save a snapshot in artifacts/snapshots
 - Press q to quit
+- If MICROPHONE_ENABLED=true, you can use voice commands such as play pause, volume up, volume down, snapshot, and discussion options
+
+If no display is attached (headless Jetson), the app skips frame windows automatically and continues running with realtime metrics logs.
 
 ### 7. Post-Setup Verification Checklist
 
@@ -174,6 +197,17 @@ Run this checklist once after setup:
 3. Snapshot files are created in artifacts/snapshots.
 4. If USE_VOICE=true, TTS response is audible without freezing video.
 5. Gesture recognition still functions if voice backend is disabled.
+6. If MICROPHONE_ENABLED=true, saying "discussion options" returns the supported command list.
+
+## Supported Voice Commands
+
+When `MICROPHONE_ENABLED=true`, the STT pipeline maps detected speech to these intents:
+
+- `play pause` / `play` / `pause` / `resume` -> `voice_play_pause`
+- `volume up` / `turn it up` / `louder` -> `voice_volume_up`
+- `volume down` / `turn it down` / `quieter` -> `voice_volume_down`
+- `snapshot` / `take photo` / `take picture` / `capture` -> `voice_snapshot`
+- `discussion options` / `help` / `what can i say` -> assistant speaks available command options
 
 ## Environment Variables
 
@@ -196,6 +230,14 @@ Run this checklist once after setup:
 - TTS_BACKEND: piper, pyttsx3, espeak, auto
 - PIPER_BINARY: piper executable name/path
 - PIPER_MODEL_PATH: local Piper voice model path
+- MICROPHONE_ENABLED: true/false to enable STT listener
+- MICROPHONE_DEVICE_INDEX: microphone device index (-1 uses default)
+- STT_TIMEOUT_SECONDS: listen timeout before retry
+- STT_PHRASE_TIME_LIMIT_SECONDS: max utterance duration
+- STT_CALIBRATION_SECONDS: ambient noise calibration duration
+- LOG_LEVEL: DEBUG, INFO, WARNING, ERROR
+- METRICS_LOG_INTERVAL: seconds between runtime metrics log lines
+- DISPLAY_MODE: auto, always, never
 
 ## Notes for Jetson
 
