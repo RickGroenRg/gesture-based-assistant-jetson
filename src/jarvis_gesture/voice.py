@@ -232,6 +232,11 @@ class VoiceIO:
     def _map_intent(self, text: str) -> Optional[str]:
         phrases = [
             ("discussion_options", ["discussion options", "what can i say", "what are my commands", "command list", "help", "options"]),
+            ("add_meeting", ["add meeting", "create meeting", "schedule meeting"]),
+            ("add_appointment", ["add appointment", "create appointment", "schedule appointment"]),
+            ("plan_day", ["plan my day", "plan day", "schedule my day"]),
+            ("plan_task", ["plan task", "schedule task", "add task", "estimate task", "task for"]),
+            ("website_lookup", ["look up", "lookup", "website info", "search website", "find on web", "search for"]),
             ("voice_volume_up", ["volume up", "turn it up", "louder", "increase volume", "raise volume", "sound up"]),
             ("voice_volume_down", ["volume down", "turn it down", "quieter", "decrease volume", "lower volume", "sound down"]),
             ("voice_snapshot", ["take snapshot", "take photo", "take picture", "capture image", "snapshot", "capture"]),

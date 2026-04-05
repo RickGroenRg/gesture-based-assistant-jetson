@@ -25,6 +25,7 @@ Included now:
 - Action router and cooldown handling
 - Offline TTS with backend fallback
 - Microphone-gated STT for command and discussion options
+- Home Assistant productivity integration for calendar, planning tasks, and website lookup task capture
 
 Planned in next milestones:
 
@@ -147,6 +148,11 @@ CAMERA_BACKEND=gstreamer
 GST_PROFILE=balanced
 MICROPHONE_ENABLED=true
 MICROPHONE_DEVICE_INDEX=-1
+HA_ENABLED=true
+HA_BASE_URL=http://homeassistant.local:8123
+HA_TOKEN=your_long_lived_token
+HA_CALENDAR_ENTITY_ID=calendar.your_google_calendar
+HA_TODO_ENTITY_ID=todo.your_task_list
 ```
 
 If a model is missing or fails to load, the app is designed to fall back to safer defaults where possible.
@@ -208,6 +214,11 @@ When `MICROPHONE_ENABLED=true`, the STT pipeline maps detected speech to these i
 - `volume down` / `turn it down` / `quieter` -> `voice_volume_down`
 - `snapshot` / `take photo` / `take picture` / `capture` -> `voice_snapshot`
 - `discussion options` / `help` / `what can i say` -> assistant speaks available command options
+- `add meeting ...` -> create meeting event through Home Assistant calendar service
+- `add appointment ...` -> create appointment event through Home Assistant calendar service
+- `plan task ... for 2 hours` -> add local planning task with estimate and queue sync
+- `plan day ...` -> add summarized day planning task with estimate
+- `website lookup ...` / `look up ...` -> attempt quick lookup and create planning research task
 
 ## Environment Variables
 
@@ -238,6 +249,19 @@ When `MICROPHONE_ENABLED=true`, the STT pipeline maps detected speech to these i
 - LOG_LEVEL: DEBUG, INFO, WARNING, ERROR
 - METRICS_LOG_INTERVAL: seconds between runtime metrics log lines
 - DISPLAY_MODE: auto, always, never
+- HA_ENABLED: enable Home Assistant integration
+- HA_BASE_URL: Home Assistant base URL
+- HA_TOKEN: Home Assistant long-lived access token
+- HA_REQUEST_TIMEOUT_SECONDS: request timeout for HA service calls
+- HA_VERIFY_TLS: enable/disable TLS certificate verification
+- HA_CALENDAR_ENTITY_ID: calendar entity used for meeting/appointment creation
+- HA_TODO_ENTITY_ID: todo entity used for task sync
+- LOCAL_TASK_STORE_PATH: local JSON path for planned tasks
+- LOCAL_SYNC_QUEUE_PATH: local JSON path for unsynced todo operations
+- PLANNING_DAILY_HOURS_LIMIT: threshold for planning warning messages
+- WEBSITE_LOOKUP_ENABLED: enable immediate website lookup
+- WEBSITE_LOOKUP_TIMEOUT_SECONDS: timeout for lookup requests
+- WEBSITE_LOOKUP_ALLOWLIST: optional comma-separated allowed domains for URL lookup
 
 ## Notes for Jetson
 

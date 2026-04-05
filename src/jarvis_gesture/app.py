@@ -9,7 +9,10 @@ from .actions import ActionRouter
 from .camera import CameraStream
 from .config import AppConfig
 from .gestures import GestureRecognizer
+from .home_assistant_client import HomeAssistantClient
+from .task_store import TaskStore
 from .voice import VoiceIO
+from .website_lookup import WebsiteLookupService
 
 
 class JarvisGestureApp:
@@ -34,7 +37,31 @@ class JarvisGestureApp:
             min_confidence=config.gesture_min_confidence,
             smoothing_window=config.gesture_smoothing_window,
         )
-        self.actions = ActionRouter(config.snapshot_dir)
+        self.ha_client = HomeAssistantClient(
+            enabled=config.ha_enabled,
+            base_url=config.ha_base_url,
+            token=config.ha_token,
+            timeout_seconds=config.ha_request_timeout_seconds,
+            verify_tls=config.ha_verify_tls,
+        )
+        self.task_store = TaskStore(
+            task_store_path=config.local_task_store_path,
+            sync_queue_path=config.local_sync_queue_path,
+        )
+        self.website_lookup = WebsiteLookupService(
+            enabled=config.website_lookup_enabled,
+            timeout_seconds=config.website_lookup_timeout_seconds,
+            allowlist_csv=config.website_lookup_allowlist,
+        )
+        self.actions = ActionRouter(
+            snapshot_dir=config.snapshot_dir,
+            ha_client=self.ha_client,
+            task_store=self.task_store,
+            website_lookup=self.website_lookup,
+            ha_calendar_entity_id=config.ha_calendar_entity_id,
+            ha_todo_entity_id=config.ha_todo_entity_id,
+            planning_daily_hours_limit=config.planning_daily_hours_limit,
+        )
         self.voice = VoiceIO(
             enabled=config.use_voice,
             backend=config.tts_backend,
@@ -70,9 +97,11 @@ class JarvisGestureApp:
 
     def run(self) -> None:
         self.camera.open()
+        ha_health = self.ha_client.health_check()
         self.logger.info("gesture backend=%s", self.gesture.backend_name)
         self.logger.info("display enabled=%s (mode=%s)", self.display_enabled, self.config.display_mode)
         self.logger.info("microphone enabled=%s stt_enabled=%s", self.config.microphone_enabled, self.voice.stt_enabled)
+        self.logger.info("home assistant enabled=%s healthy=%s message=%s", self.config.ha_enabled, ha_health.ok, ha_health.message)
         self.voice.speak("Jarvis gesture assistant initialized")
 
         metrics_started_at = time.time()
@@ -95,11 +124,11 @@ class JarvisGestureApp:
                     self.logger.info("stt text=%s intent=%s", voice_command.text, voice_command.intent)
                     if voice_command.intent == "discussion_options":
                         help_text = (
-                            "You can say play pause, volume up, volume down, snapshot, or ask for discussion options."
+                            "You can say play pause, volume up, volume down, snapshot, add meeting, add appointment, plan task, plan day, website lookup, or discussion options."
                         )
                         self.voice.speak(help_text)
                     elif voice_command.intent is not None:
-                        action_result = self.actions.execute(voice_command.intent, frame)
+                        action_result = self.actions.execute(voice_command.intent, frame, voice_command.text)
                         if action_result.ok:
                             action_success += 1
                             self.logger.info(
@@ -121,7 +150,7 @@ class JarvisGestureApp:
                     now = time.time()
                     if now - self.last_trigger_ts >= self.config.gesture_cooldown_seconds:
                         self.last_trigger_ts = now
-                        action_result = self.actions.execute(gesture_result.name, frame)
+                        action_result = self.actions.execute(gesture_result.name, frame, "")
                         if action_result.ok:
                             action_success += 1
                             self.voice.speak(action_result.message)
@@ -172,6 +201,7 @@ class JarvisGestureApp:
                         break
 
                 now = time.time()
+                self._flush_sync_queue()
                 if now - last_metrics_log >= self.config.metrics_log_interval_seconds:
                     runtime = max(0.001, now - metrics_started_at)
                     avg_loop_ms = total_loop_time / max(1, loop_count)
@@ -198,3 +228,23 @@ class JarvisGestureApp:
             self.camera.close()
             if self.display_enabled:
                 cv2.destroyAllWindows()
+
+    def _flush_sync_queue(self) -> None:
+        if not self.ha_client.enabled or not self.config.ha_todo_entity_id:
+            return
+
+        pending = self.task_store.pending_sync_items()
+        if not pending:
+            return
+
+        # Keep loop responsive by syncing one queued item per cycle.
+        item = pending[0]
+        response = self.ha_client.add_todo_item(
+            todo_entity_id=self.config.ha_todo_entity_id,
+            summary=item.get("summary", "Planned Task"),
+            description=item.get("description", ""),
+        )
+        if response.ok:
+            self.task_store.mark_synced(item.get("summary", ""), item.get("created_at", ""))
+        else:
+            self.logger.debug("sync queue item failed: %s", response.message)

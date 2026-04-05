@@ -45,6 +45,22 @@ class AppConfig:
     metrics_log_interval_seconds: float = 2.0
     display_mode: str = "auto"
 
+    ha_enabled: bool = False
+    ha_base_url: str = ""
+    ha_token: str = ""
+    ha_request_timeout_seconds: float = 5.0
+    ha_verify_tls: bool = True
+    ha_calendar_entity_id: str = ""
+    ha_todo_entity_id: str = ""
+
+    local_task_store_path: str = "artifacts/planning/tasks.json"
+    local_sync_queue_path: str = "artifacts/planning/sync_queue.json"
+    planning_daily_hours_limit: float = 8.0
+
+    website_lookup_enabled: bool = True
+    website_lookup_timeout_seconds: float = 4.0
+    website_lookup_allowlist: str = ""
+
     @staticmethod
     def from_env() -> "AppConfig":
         load_dotenv()
@@ -76,4 +92,17 @@ class AppConfig:
             log_level=os.getenv("LOG_LEVEL", "INFO"),
             metrics_log_interval_seconds=float(os.getenv("METRICS_LOG_INTERVAL", "2.0")),
             display_mode=os.getenv("DISPLAY_MODE", "auto"),
+            ha_enabled=_to_bool(os.getenv("HA_ENABLED", "false")),
+            ha_base_url=os.getenv("HA_BASE_URL", ""),
+            ha_token=os.getenv("HA_TOKEN", ""),
+            ha_request_timeout_seconds=float(os.getenv("HA_REQUEST_TIMEOUT_SECONDS", "5.0")),
+            ha_verify_tls=_to_bool(os.getenv("HA_VERIFY_TLS", "true")),
+            ha_calendar_entity_id=os.getenv("HA_CALENDAR_ENTITY_ID", ""),
+            ha_todo_entity_id=os.getenv("HA_TODO_ENTITY_ID", ""),
+            local_task_store_path=os.getenv("LOCAL_TASK_STORE_PATH", "artifacts/planning/tasks.json"),
+            local_sync_queue_path=os.getenv("LOCAL_SYNC_QUEUE_PATH", "artifacts/planning/sync_queue.json"),
+            planning_daily_hours_limit=float(os.getenv("PLANNING_DAILY_HOURS_LIMIT", "8.0")),
+            website_lookup_enabled=_to_bool(os.getenv("WEBSITE_LOOKUP_ENABLED", "true")),
+            website_lookup_timeout_seconds=float(os.getenv("WEBSITE_LOOKUP_TIMEOUT_SECONDS", "4.0")),
+            website_lookup_allowlist=os.getenv("WEBSITE_LOOKUP_ALLOWLIST", ""),
         )
